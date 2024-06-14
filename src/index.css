@@ -1,0 +1,104 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  place-items: center;
+  background-color: hsl(235, 21%, 11%);
+}
+.music-player {
+  /* background-color: #1a1a1a; */
+  /* 
+   */
+  background-color: blue;
+  color: white;
+  width: 300px;
+  padding: 20px;
+  border-radius: 20px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.menu-icon {
+  cursor: pointer;
+}
+
+.album-cover img {
+  width: 70%;
+  height: 50%;
+  border-radius: 20px;
+}
+
+.song-info {
+  margin: 20px 0;
+}
+
+.song-info h2 {
+  margin: 0;
+}
+
+.song-info p {
+  margin: 5px 0 0 0;
+  color: #999;
+}
+
+.progress-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.progress-bar {
+  width: 60%;
+  margin: 0 10px;
+  color: blueviolet;
+  background-color: green;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.control-icon {
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.control-icon.play {
+  color: green;
+  font-size: 30px;
+}
+
+.volume {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.volume p {
+  margin-left: 10px;
+  color: #999;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.footer-icon {
+  cursor: pointer;
+  font-size: 24px;
+}
