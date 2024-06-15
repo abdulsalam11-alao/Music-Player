@@ -1,19 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+import { AlbumCover, Controls, Footer, Header, ProgressContainer, SongInfo, SongList, VolumeControl } from "./components/Index"
 import "./index.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faHeart,
-  faPlay,
-  faPause,
-  faForward,
-  faBackward,
-  faVolumeUp,
-  faEllipsisH,
-  faFastBackward,
-  faFastForward,
-  faArrowLeft,
-} from "@fortawesome/free-solid-svg-icons";
-// import Lover from "./image/Beatuful People.jpeg";
 
 const songs = [
   {
@@ -23,8 +11,7 @@ const songs = [
     album: "Megan Thee Stallion",
     release_date: "2020",
     duration: 187,
-    music:
-      "/assets/music/Cardi-B-–-WAP-ft.-Megan-Thee-Stallion-Wiseloaded.com_.mp3",
+    music: "/assets/music/Cardi-B-–-WAP-ft.-Megan-Thee-Stallion-Wiseloaded.com_.mp3",
     image: "/assets/image/cardib.png",
   },
   {
@@ -44,8 +31,7 @@ const songs = [
     album: "No.6 Collaborations Project",
     release_date: "2019",
     duration: 227,
-    music:
-      "/assets/music/Ed_Sheeran_-_Beautiful_People_ft_Khalid_talkglitz.tv.mp3",
+    music: "/assets/music/Ed_Sheeran_-_Beautiful_People_ft_Khalid_talkglitz.tv.mp3",
     image: "/assets/image/BeatufulPeople.jpeg",
   },
   {
@@ -55,8 +41,7 @@ const songs = [
     album: "No.6 Collaborations Project",
     release_date: "2019",
     duration: 220,
-    music:
-      "/assets/music/Ed_Sheeran_Justin_Bieber_-_I_Dont_Care_talkglitz.tv.mp3",
+    music: "/assets/music/Ed_Sheeran_Justin_Bieber_-_I_Dont_Care_talkglitz.tv.mp3",
     image: "/assets/image/IDON'tcare.png",
   },
   {
@@ -104,139 +89,161 @@ const songs = [
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [audio] = useState(new Audio());
-  const [song, setSong] = useState([...songs]);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const audioRef = useRef(new Audio());
+  const songListRef = useRef(null);
+  const [song] = useState(songs);
+  const [currentSongIndex, setCurrentSongIndex] = useState(JSON.parse(localStorage.getItem("currentSongIndex")) || 0);
+  const [showSongList, setShowSongList] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffleOrder, setShuffleOrder] = useState([]);
 
   let currentSong = song[currentSongIndex];
 
+  useEffect(() => {
+    const savedTime = localStorage.getItem("currentTime");
+    if (savedTime) {
+      setCurrentTime(parseFloat(savedTime));
+      audioRef.current.currentTime = parseFloat(savedTime);
+    }
+
+    audioRef.current.src = process.env.PUBLIC_URL + currentSong.music;
+
+    const updateTime = () => {
+      setCurrentTime(audioRef.current.currentTime);
+      localStorage.setItem("currentTime", audioRef.current.currentTime);
+    };
+
+    const endedTime = () => {
+      nextSong();
+    };
+
+    audioRef.current.addEventListener("timeupdate", updateTime);
+    audioRef.current.addEventListener("ended", endedTime);
+
+    return () => {
+      audioRef.current.removeEventListener("timeupdate", updateTime);
+      audioRef.current.removeEventListener("ended", endedTime);
+    };
+  }, [currentSong]);
+
+  const playSong = () => {
+    audioRef.current.play();
+    setIsPlaying(true);
+  };
+
   const nextSong = () => {
     setCurrentSongIndex((prevIndex) =>
-      prevIndex === songs.length - 1 ? 0 : prevIndex + 1
+      isShuffling
+        ? shuffleOrder[(shuffleOrder.indexOf(prevIndex) + 1) % shuffleOrder.length]
+        : (prevIndex + 1) % songs.length
     );
-    audio.pause();
-    setIsPlaying(false);
-  };
-  const PrevSong = () => {
-    setCurrentSongIndex(
-      (prevIndex) => (prevIndex === songs.length - 1 ? 0 : prevIndex - 1),
-      audio.pause(),
-      setIsPlaying(false)
-    );
-  };
-  const updateTime = () => {
-    setCurrentTime(audio.currentTime);
-  };
-  const endedTime = () => {
     setCurrentTime(0);
-    setIsPlaying(false);
+    setIsPlaying(true);
   };
-  audio.addEventListener("timeupdate", updateTime);
-  audio.addEventListener("ended", endedTime);
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
 
+  const prevSong = () => {
+    setCurrentSongIndex((prevIndex) =>
+      isShuffling
+        ? shuffleOrder[(shuffleOrder.indexOf(prevIndex) - 1 + shuffleOrder.length) % shuffleOrder.length]
+        : (prevIndex - 1 + songs.length) % songs.length
+    );
+    setCurrentTime(0);
+    setIsPlaying(true);
+  };
+
+  const togglePlayPause = () => {
     if (isPlaying) {
-      pause();
+      audioRef.current.pause();
     } else {
-      play();
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const moveCurMusicFor = () => {
+    const newTime = audioRef.current.currentTime + 10;
+    audioRef.current.currentTime = newTime > audioRef.current.duration ? audioRef.current.duration : newTime;
+  };
+
+  const moveCurMusicBack = () => {
+    const newTime = audioRef.current.currentTime - 10;
+    audioRef.current.currentTime = newTime < 0 ? 0 : newTime;
+  };
+
+  const moveMusicByRange = (value) => {
+    audioRef.current.currentTime = value < 0 ? 0 : value;
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const toggleSongList = () => {
+    setShowSongList(!showSongList);
+  };
+
+  const selectSong = (index) => {
+    setCurrentSongIndex(index);
+    setShowSongList(false);
+    setCurrentTime(0);
+    setIsPlaying(true);
+  };
+
+  const toggleShuffle = () => {
+    setIsShuffling(!isShuffling);
+    if (!isShuffling) {
+      const shuffledOrder = [...Array(songs.length).keys()].sort(
+        () => Math.random() - 0.5
+      );
+      setShuffleOrder(shuffledOrder);
     }
   };
-  const moveCurMusicFor = () => {
-    const newTime = audio.currentTime + 10;
-    audio.currentTime = newTime > audio.duration ? audio.duration : newTime;
-  };
-  const moveCurMusicback = () => {
-    const newTime = audio.currentTime - 10;
-    audio.currentTime = newTime < 0 ? 0 : newTime;
-  };
-  const moveMusicByRange = (value) => {
-    const newTime = value;
-    audio.currentTime = newTime < 0 ? 0 : newTime;
-  };
-  const play = () => {
-    setIsPlaying(true);
-    audio.src = process.env.PUBLIC_URL + currentSong.music;
-    audio.play();
-    console.log(currentTime);
-    updateTime();
-  };
-  const pause = () => {
-    setIsPlaying(false);
-    audio.src = process.env.PUBLIC_URL + currentSong.music;
-    audio.pause();
-  };
-  const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
 
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  const handleClickOutside = (event) => {
+    if (songListRef.current && !songListRef.current.contains(event.target)) {
+      setShowSongList(false);
+    }
   };
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("currentSongIndex", JSON.stringify(currentSongIndex));
+  }, [currentSongIndex]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      audioRef.current.play();
+    }
+  }, [currentSongIndex, isPlaying]);
+
   return (
     <div className="music-player">
-      <div className="header">
-        <FontAwesomeIcon icon={faArrowLeft} className="menu-icon" />
-        <p>{currentSong.album}</p>
-        <FontAwesomeIcon icon={faEllipsisH} className="menu-icon" />
-      </div>
-      <div className="album-cover">
-        <img
-          src={process.env.PUBLIC_URL + currentSong.image}
-          alt={currentSong.artist}
-        />
-      </div>
-      <div className="song-info">
-        <h2>{currentSong.title}</h2>
-        <p>{currentSong.artist}</p>
-      </div>
-      <div className="progress-container">
-        <span>{formatTime(currentTime)}</span>
-        <input
-          type="range"
-          min="0"
-          max={currentSong.duration}
-          value={currentTime}
-          onChange={(e) => setCurrentTime(Number(e.target.value))}
-          className="progress-bar"
-          onClick={(e) => moveMusicByRange(e.target.value)}
-        />
-        <span>{formatTime(currentSong.duration)}</span>
-      </div>
-      <div className="controls">
-        <FontAwesomeIcon
-          icon={faFastBackward}
-          className="control-icon"
-          onClick={PrevSong}
-        />
-        <FontAwesomeIcon
-          icon={faBackward}
-          className="control-icon"
-          onClick={moveCurMusicback}
-        />
-        <FontAwesomeIcon
-          icon={isPlaying ? faPause : faPlay}
-          className="control-icon play"
-          onClick={togglePlayPause}
-        />
-        <FontAwesomeIcon
-          icon={faForward}
-          className="control-icon"
-          onClick={moveCurMusicFor}
-        />
-        <FontAwesomeIcon
-          icon={faFastForward}
-          className="control-icon"
-          onClick={nextSong}
-        />
-      </div>
-      <div className="volume">
-        <FontAwesomeIcon icon={faVolumeUp} />
-        <p>Airpods Pro</p>
-      </div>
-      <div className="footer">
-        <FontAwesomeIcon icon={faHeart} className="footer-icon" />
-        <FontAwesomeIcon icon={faEllipsisH} className="footer-icon" />
-      </div>
+      <Header album={currentSong.album} />
+      <AlbumCover image={currentSong.image} artist={currentSong.artist} />
+      <SongInfo title={currentSong.title} artist={currentSong.artist} />
+      <ProgressContainer
+        currentTime={currentTime}
+        duration={currentSong.duration}
+        onTimeChange={moveMusicByRange}
+      />
+      <Controls
+        isPlaying={isPlaying}
+        onPlayPause={togglePlayPause}
+        onNext={nextSong}
+        onPrev={prevSong}
+        onForward={moveCurMusicFor}
+        onBackward={moveCurMusicBack}
+      />
+      <VolumeControl />
+      {showSongList &&
+        <div ref={songListRef}>
+          <SongList songs={songs} onSelectSong={selectSong} />
+        </div>
+      }
+      <Footer isShuffling={isShuffling} onToggleShuffle={toggleShuffle} onToggleSongList={toggleSongList} />
     </div>
   );
 }
