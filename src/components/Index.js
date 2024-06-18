@@ -7,4 +7,13 @@ import SongInfo from "./SongInfo";
 import SongList from "./SongList";
 import VolumeControl from "./VolumeControl";
 
-export { AlbumCover, Controls, Footer, Header, ProgressContainer, SongInfo, SongList, VolumeControl }
+export {
+  AlbumCover,
+  Controls,
+  Footer,
+  Header,
+  ProgressContainer,
+  SongInfo,
+  SongList,
+  VolumeControl,
+};

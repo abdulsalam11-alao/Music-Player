@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-
-import { AlbumCover, Controls, Footer, Header, ProgressContainer, SongInfo, SongList, VolumeControl } from "./components/Index"
+import {
+  AlbumCover,
+  Controls,
+  Footer,
+  Header,
+  ProgressContainer,
+  SongInfo,
+  SongList,
+  VolumeControl,
+} from "./components/Index";
 import "./index.css";
 
 const songs = [
@@ -11,7 +19,8 @@ const songs = [
     album: "Megan Thee Stallion",
     release_date: "2020",
     duration: 187,
-    music: "/assets/music/Cardi-B-–-WAP-ft.-Megan-Thee-Stallion-Wiseloaded.com_.mp3",
+    music:
+      "/assets/music/Cardi-B-–-WAP-ft.-Megan-Thee-Stallion-Wiseloaded.com_.mp3",
     image: "/assets/image/cardib.png",
   },
   {
@@ -31,7 +40,8 @@ const songs = [
     album: "No.6 Collaborations Project",
     release_date: "2019",
     duration: 227,
-    music: "/assets/music/Ed_Sheeran_-_Beautiful_People_ft_Khalid_talkglitz.tv.mp3",
+    music:
+      "/assets/music/Ed_Sheeran_-_Beautiful_People_ft_Khalid_talkglitz.tv.mp3",
     image: "/assets/image/BeatufulPeople.jpeg",
   },
   {
@@ -41,7 +51,8 @@ const songs = [
     album: "No.6 Collaborations Project",
     release_date: "2019",
     duration: 220,
-    music: "/assets/music/Ed_Sheeran_Justin_Bieber_-_I_Dont_Care_talkglitz.tv.mp3",
+    music:
+      "/assets/music/Ed_Sheeran_Justin_Bieber_-_I_Dont_Care_talkglitz.tv.mp3",
     image: "/assets/image/IDON'tcare.png",
   },
   {
@@ -89,15 +100,19 @@ const songs = [
 function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef(new Audio());
-  const songListRef = useRef(null);
-  const [song] = useState(songs);
-  const [currentSongIndex, setCurrentSongIndex] = useState(JSON.parse(localStorage.getItem("currentSongIndex")) || 0);
+  const [volume, setVolume] = useState(1);
+  const [currentSongIndex, setCurrentSongIndex] = useState(
+    JSON.parse(localStorage.getItem("currentSongIndex")) || 0
+  );
   const [showSongList, setShowSongList] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleOrder, setShuffleOrder] = useState([]);
+  const [repeatMode, setRepeatMode] = useState(false); // false: No repeat, true: Repeat all
 
-  let currentSong = song[currentSongIndex];
+  const audioRef = useRef(new Audio());
+  const songListRef = useRef(null);
+
+  const currentSong = songs[currentSongIndex];
 
   useEffect(() => {
     const savedTime = localStorage.getItem("currentTime");
@@ -107,34 +122,50 @@ function App() {
     }
 
     audioRef.current.src = process.env.PUBLIC_URL + currentSong.music;
+    audioRef.current.volume = volume;
 
     const updateTime = () => {
       setCurrentTime(audioRef.current.currentTime);
       localStorage.setItem("currentTime", audioRef.current.currentTime);
     };
 
-    const endedTime = () => {
-      nextSong();
+    const handleEnded = () => {
+      if (repeatMode) {
+        nextSong();
+      } else {
+        playSong();
+      }
     };
 
     audioRef.current.addEventListener("timeupdate", updateTime);
-    audioRef.current.addEventListener("ended", endedTime);
+    audioRef.current.addEventListener("ended", handleEnded);
 
     return () => {
       audioRef.current.removeEventListener("timeupdate", updateTime);
-      audioRef.current.removeEventListener("ended", endedTime);
+      audioRef.current.removeEventListener("ended", handleEnded);
     };
-  }, [currentSong]);
+  }, [currentSong, repeatMode]);
+
+  useEffect(() => {
+    audioRef.current.volume = volume;
+  }, [volume]);
 
   const playSong = () => {
     audioRef.current.play();
     setIsPlaying(true);
   };
 
+  const pauseSong = () => {
+    audioRef.current.pause();
+    setIsPlaying(false);
+  };
+
   const nextSong = () => {
     setCurrentSongIndex((prevIndex) =>
       isShuffling
-        ? shuffleOrder[(shuffleOrder.indexOf(prevIndex) + 1) % shuffleOrder.length]
+        ? shuffleOrder[
+            (shuffleOrder.indexOf(prevIndex) + 1) % shuffleOrder.length
+          ]
         : (prevIndex + 1) % songs.length
     );
     setCurrentTime(0);
@@ -144,7 +175,10 @@ function App() {
   const prevSong = () => {
     setCurrentSongIndex((prevIndex) =>
       isShuffling
-        ? shuffleOrder[(shuffleOrder.indexOf(prevIndex) - 1 + shuffleOrder.length) % shuffleOrder.length]
+        ? shuffleOrder[
+            (shuffleOrder.indexOf(prevIndex) - 1 + shuffleOrder.length) %
+              shuffleOrder.length
+          ]
         : (prevIndex - 1 + songs.length) % songs.length
     );
     setCurrentTime(0);
@@ -153,16 +187,16 @@ function App() {
 
   const togglePlayPause = () => {
     if (isPlaying) {
-      audioRef.current.pause();
+      pauseSong();
     } else {
-      audioRef.current.play();
+      playSong();
     }
-    setIsPlaying(!isPlaying);
   };
 
   const moveCurMusicFor = () => {
     const newTime = audioRef.current.currentTime + 10;
-    audioRef.current.currentTime = newTime > audioRef.current.duration ? audioRef.current.duration : newTime;
+    audioRef.current.currentTime =
+      newTime > audioRef.current.duration ? audioRef.current.duration : newTime;
   };
 
   const moveCurMusicBack = () => {
@@ -196,14 +230,24 @@ function App() {
     }
   };
 
+  const toggleRepeat = () => {
+    setRepeatMode(!repeatMode);
+  };
+
   const handleClickOutside = (event) => {
     if (songListRef.current && !songListRef.current.contains(event.target)) {
       setShowSongList(false);
     }
   };
 
+  const handleVolume = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+  };
+
   useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -237,13 +281,27 @@ function App() {
         onForward={moveCurMusicFor}
         onBackward={moveCurMusicBack}
       />
-      <VolumeControl />
-      {showSongList &&
+      <VolumeControl volume={volume} onHandleVolume={handleVolume} />
+      {showSongList && (
         <div ref={songListRef}>
           <SongList songs={songs} onSelectSong={selectSong} />
         </div>
-      }
-      <Footer isShuffling={isShuffling} onToggleShuffle={toggleShuffle} onToggleSongList={toggleSongList} />
+      )}
+      <Footer
+        isShuffling={isShuffling}
+        onToggleShuffle={toggleShuffle}
+        onToggleSongList={toggleSongList}
+        onRepeat={toggleRepeat}
+        repeatMode={repeatMode}
+      />
+      {showSongList && (
+        <SongList
+          songs={songs}
+          onSelectSong={selectSong}
+          currentSongIndex={currentSongIndex}
+          ref={songListRef}
+        />
+      )}
     </div>
   );
 }
