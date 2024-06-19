@@ -1,9 +1,9 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import "../styles/songlist.css";
 
-function SongList({ songs, onSelectSong }) {
+const SongList = forwardRef(({ songs, onSelectSong }, ref) => {
   return (
-    <div className="song-list">
+    <div className="song-list" ref={ref}>
       {songs.map((song, index) => (
         <div
           className="song-item"
@@ -23,6 +23,6 @@ function SongList({ songs, onSelectSong }) {
       ))}
     </div>
   );
-}
+});
 
 export default SongList;
